@@ -1,10 +1,14 @@
 package com.example.FoodieFlow.Controllers;
 
+import com.example.FoodieFlow.Exceptions.OrderNotCompletedException;
+import com.example.FoodieFlow.Exceptions.OrderNotFulfillForRestaurant;
+import com.example.FoodieFlow.Exceptions.RestaurantNotFoundException;
 import com.example.FoodieFlow.RestaurantSelection.HighestRatingSelection;
 import com.example.FoodieFlow.RestaurantSelection.LowestCostSelection;
 import com.example.FoodieFlow.RestaurantSelection.OrderSelectionStrategy;
 import com.example.FoodieFlow.Services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,20 +34,35 @@ public class OrderController {
         return ResponseEntity.ok("Restaurants Onboarded");
     }
     @PostMapping("/restaurant/addMenu")
-    public ResponseEntity addMenuItemsInRestaurant(@RequestParam  String restaurantName, @RequestParam String itemName, @RequestParam double price){
-        orderService.addMenuItemsInRestaurant(restaurantName, itemName, price);
-        return ResponseEntity.ok("Menu Item added to: "+restaurantName);
+    public ResponseEntity addMenuItemsInRestaurant(@RequestParam  String restaurantName, @RequestParam String itemName, @RequestParam double price) {
+        try {
+            orderService.addMenuItemsInRestaurant(restaurantName, itemName, price);
+            return new ResponseEntity("Menu Item added to: " + restaurantName, HttpStatus.CREATED);
+        }
+        catch(Exception e){
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
+        }
     }
     @PostMapping("/order")
-    public ResponseEntity placeOrder(@RequestParam List<String> items, @RequestParam String strategyType){
+    public ResponseEntity placeOrder(@RequestParam List<String> items, @RequestParam String strategyType)  {
         OrderSelectionStrategy orderSelectionStrategy = strategyType.equals("lowest_cost") ? new LowestCostSelection() : new HighestRatingSelection();
-        int orderId = orderService.placeOrder(items, orderSelectionStrategy);
-        return ResponseEntity.ok("Order Placed with ID: " + orderId);
+        try {
+            int orderId = orderService.placeOrder(items, orderSelectionStrategy);
+            return ResponseEntity.ok("Order Placed with ID: " + orderId);
+        }
+        catch(Exception e){
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
+        }
     }
 
     @PostMapping("/order/complete ")
-    public ResponseEntity completeOrder(@RequestParam int orderId){
-        orderService.completeOrder(orderId);
-        return ResponseEntity.ok("Order marked as Completed!!");
+    public ResponseEntity completeOrder(@RequestParam int orderId) {
+        try {
+            orderService.completeOrder(orderId);
+            return ResponseEntity.ok("Order marked as Completed!!");
+        }
+        catch(Exception e){
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
+        }
     }
 }
